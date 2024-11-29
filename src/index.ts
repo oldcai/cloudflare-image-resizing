@@ -41,6 +41,20 @@ export default {
 		// Get current domain from request
 		const currentDomain = new URL(request.url).hostname
   
+		// Extract root domain from both hostnames
+		const getRootDomain = (hostname: string) => {
+		  const parts = hostname.split('.')
+		  return parts.slice(-2).join('.')
+		}
+  
+		const sourceRootDomain = getRootDomain(hostname)
+		const currentRootDomain = getRootDomain(currentDomain)
+  
+		// Check if domains match at root level
+		if (sourceRootDomain !== currentRootDomain) {
+		  return new Response(`Must use "${currentRootDomain}" or its subdomains`, { status: 403 })
+		}
+  
 		// Check for disallowed path prefixes
 		const disallowedPrefixes = ['/resize', '/image-resizing', '/thumb', '/thumbnail']
 		if (disallowedPrefixes.some(prefix => pathname.toLowerCase().startsWith(prefix))) {
@@ -51,11 +65,6 @@ export default {
 		// @see https://developers.cloudflare.com/images/url-format#supported-formats-and-limitations
 		if (!/\.(jpe?g|png|gif|webp)$/i.test(pathname)) {
 		  return new Response('Disallowed file extension', { status: 400 })
-		}
-  
-		// Use current domain instead of hardcoded example.com
-		if (hostname !== currentDomain) {
-		  return new Response(`Must use "${currentDomain}" source images`, { status: 403 })
 		}
 	  } catch (err) {
 		return new Response('Invalid "image" value', { status: 400 })
